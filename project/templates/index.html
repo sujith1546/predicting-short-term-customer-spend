@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpendIQ – 30-Day Revenue Forecast</title>
+  <meta name="description" content="Predict a customer's next 30-day spend using machine learning. Look up existing customers or upload transaction history for new ones." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">SpendIQ</span>
+    </div>
+    <p class="logo-sub">30-Day Revenue Forecast Engine</p>
+  </header>
+
+  <main class="main-wrap">
+
+    <!-- Mode tabs -->
+    <div class="tab-bar" role="tablist">
+      <button class="tab active" id="tab-existing" role="tab"
+              aria-controls="panel-existing" aria-selected="true"
+              onclick="switchTab('existing')">
+        <span class="tab-icon">🔍</span> Existing Customer
+      </button>
+      <button class="tab" id="tab-new" role="tab"
+              aria-controls="panel-new" aria-selected="false"
+              onclick="switchTab('new')">
+        <span class="tab-icon">🆕</span> New Customer
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PANEL A – Existing Customer
+    ═══════════════════════════════════════ -->
+    <section id="panel-existing" class="panel active" role="tabpanel">
+      <div class="panel-intro">
+        <h2>Lookup Existing Customer</h2>
+        <p>Enter a CustomerID and a cutoff date. We retrieve the most recent snapshot <strong>on or before</strong> that date and predict spend for the next 30 days.</p>
+      </div>
+
+      <form id="form-existing" class="card" novalidate>
+        <div class="field-grid two-col">
+
+          <div class="field">
+            <label for="customer_id">Customer ID</label>
+            <input type="text" id="customer_id" name="customer_id"
+                   placeholder="e.g. 17850" autocomplete="off" required />
+            <span class="field-hint">Integer CustomerID from the training data</span>
+          </div>
+
+          <div class="field">
+            <label for="cutoff_date_existing">Cutoff Date</label>
+            <input type="date" id="cutoff_date_existing" name="cutoff_date_existing"
+                   max="2012-12-31" required />
+            <span class="field-hint">Model uses snapshot on or before this date</span>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn-predict" id="btn-existing">
+          <span class="btn-text">Predict Spend</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </form>
+
+      <div id="result-existing" class="result-card hidden" aria-live="polite">
+        <div class="result-header">
+          <div class="result-badge">
+            <span class="currency">£</span>
+            <span id="pred-existing-value" class="pred-amount">—</span>
+          </div>
+          <div class="result-meta">
+            <p class="result-label">Predicted 30-day spend</p>
+            <p id="pred-existing-id" class="result-sub">—</p>
+            <p id="pred-existing-cutoff" class="result-sub muted">—</p>
+          </div>
+        </div>
+
+        <div id="comparison-block" class="comparison hidden">
+          <div class="comp-item">
+            <span class="comp-label">Predicted</span>
+            <span id="comp-predicted" class="comp-value predicted">—</span>
+          </div>
+          <div class="comp-divider"></div>
+          <div class="comp-item">
+            <span class="comp-label">Actual</span>
+            <span id="comp-actual" class="comp-value actual">—</span>
+          </div>
+          <div class="comp-divider"></div>
+          <div class="comp-item">
+            <span class="comp-label">Difference</span>
+            <span id="comp-diff" class="comp-value diff">—</span>
+          </div>
+        </div>
+
+        <details class="snapshot-details">
+          <summary>View feature snapshot</summary>
+          <div id="snapshot-table" class="feature-grid"></div>
+        </details>
+      </div>
+      <div id="error-existing" class="error-card hidden" role="alert"></div>
+    </section>
+
+    <!-- ══════════════════════════════════════
+         PANEL B – New Customer (CSV upload)
+    ═══════════════════════════════════════ -->
+    <section id="panel-new" class="panel" role="tabpanel">
+      <div class="panel-intro">
+        <h2>Predict for a New Customer</h2>
+        <p>Upload a CSV of transaction history. We compute all 12 features and forecast 30-day spend from the cutoff date.</p>
+      </div>
+
+      <form id="form-new" class="card" novalidate enctype="multipart/form-data">
+
+        <!-- CSV Upload drop zone -->
+        <div class="section-header"><span class="section-icon">📄</span> Transaction CSV</div>
+
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv" required />
+          <div class="upload-body" id="upload-body" onclick="document.getElementById('csv_file').click()">
+            <span class="upload-icon">⬆</span>
+            <p class="upload-title">Click or drag &amp; drop your CSV</p>
+            <p class="upload-sub">Required: <code>InvoiceDate</code>, <code>Quantity</code>, <code>UnitPrice</code></p>
+            <p class="upload-sub">Optional: <code>TotalAmount</code>, <code>Channel</code> (Web / Mobile / In-store)</p>
+          </div>
+          <div class="upload-selected hidden" id="upload-selected">
+            <span class="file-icon">📎</span>
+            <span id="file-name-display">—</span>
+            <button type="button" class="file-clear" id="file-clear" title="Remove file">✕</button>
+          </div>
+        </div>
+
+        <!-- CSV format guide -->
+        <details class="csv-guide">
+          <summary>📋 Example CSV format</summary>
+          <div class="csv-example">
+            <pre><code>InvoiceDate,Quantity,UnitPrice,Channel
+2011-01-15 14:30,2,5.99,Web
+2011-02-03 09:15,1,12.50,Mobile
+2011-02-28 20:45,3,7.25,In-store</code></pre>
+            <p class="guide-note">If <code>Channel</code> is omitted it is inferred from the hour of <code>InvoiceDate</code>.</p>
+          </div>
+        </details>
+
+        <!-- Cutoff date -->
+        <div class="section-header" style="margin-top:1.5rem"><span class="section-icon">📅</span> Cutoff Date</div>
+        <div class="field-grid one-col">
+          <div class="field">
+            <label for="cutoff_date_new">Cutoff Date</label>
+            <input type="date" id="cutoff_date_new" name="cutoff_date_new"
+                   required />
+            <span class="field-hint">Features are computed from all transactions on or before this date. Prediction covers the following 30 days.</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-predict" id="btn-new">
+          <span class="btn-text">Predict Spend</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+      </form>
+
+      <div id="result-new" class="result-card hidden" aria-live="polite">
+        <div class="result-header">
+          <div class="result-badge">
+            <span class="currency">£</span>
+            <span id="pred-new-value" class="pred-amount">—</span>
+          </div>
+          <div class="result-meta">
+            <p class="result-label">Predicted 30-day spend</p>
+            <p id="pred-new-cutoff" class="result-sub muted">—</p>
+          </div>
+        </div>
+        <details class="snapshot-details" open>
+          <summary>Computed feature vector</summary>
+          <div id="constructed-table" class="feature-grid"></div>
+        </details>
+      </div>
+      <div id="error-new" class="error-card hidden" role="alert"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>SpendIQ &nbsp;·&nbsp; Powered by scikit-learn &nbsp;·&nbsp; 30-day revenue forecasting</p>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
